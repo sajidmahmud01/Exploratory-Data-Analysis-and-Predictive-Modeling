@@ -1,14 +1,6 @@
 ﻿# Exploratory-Data-Analysis-and-Predictive-Modeling
 
-# Data Visualization and Regression Analysis: STAT 1910 Project
-
-This repository contains a comprehensive data analysis project developed by **Group S**:
-
-- Ainrhon Uy
-- Sajid Oyon
-- Dushyant Rai Mungur
-- Divyesh Jadheea
-- Emmanuel Lagudah
+# Data Visualization and Regression Analysis
 
 The project was created for the **STAT 1910** course and utilizes datasets from [OpenIntro](https://www.openintro.org/data/).
 
