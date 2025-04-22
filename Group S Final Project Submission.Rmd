@@ -1,0 +1,370 @@
+
+---
+title: "STAT 1910 Project Proposal"
+author: "GROUP S - Ainrhon Uy,  Sajid Oyon, Dushyant Rai Mungur,  Divyesh Jadheea,  Emmanuel Lagudah"
+date: "Last updated on `r Sys.Date()`"
+output:
+  html_document:
+    fig_caption: yes
+    theme: lumen
+    toc: yes
+    toc_depth: 2
+    df_print: kable
+    toc_float: 
+      collapsed: no
+---
+
+```{r, include=FALSE}
+# Do not edit this code block/chunk
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning = FALSE, fig.width = 16/2.5, fig.height = 9/2.5)
+```
+
+
+```{r}
+# Load all necessary packages here:
+library(ggplot2)
+library(dplyr)
+library(janitor)
+library(readr)
+library(knitr)
+```
+
+```{r}
+# Copy over all your data wrangling code here:
+climate_change <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vS1-EXLBD9-N2q83Q0ynjSRG6VYJJmJYgsU7tLXNKKqQZoRyNRpq3ACfd8rkCRKeo-62XJZf_huAfU5/pub?gid=108400312&single=true&output=csv")
+  # clean variable names
+  climate_change <- climate_change |>
+  clean_names()
+
+climate_change <- climate_change |>
+       mutate(season = cut(month, breaks=c(0, 3, 6, 9, 12), labels=c("winter", "spring", "summer", "fall"))) 
+```
+
+
+
+***
+
+
+
+![](https://i2.wp.com/www.markstivers.com/cartoons/Stivers%2011-9-02%20SAT%20waiter.gif?zoom=2_){ width=400px }
+
+# 1. Introduction 
+
+Earth's climate, influenced by natural and human factors, relies on global temperature as a crucial health indicator. This study explores climate data from 1983 to 2008, focusing on global average temperature trends. The dataset, compiled collaboratively from sources like the Climatic Research Unit and NASA, includes variables like CO2, N2O, and CH4, enhancing our understanding.
+
+Beyond knowledge, uncovering temperature patterns aids climate change mitigation. Investigating variables like year, month, solar irradiance, and El Nino/La Nina, the study contributes insights as how temperature has been changing over time. With no singular identification variable, the dataset's 308 rows represent diverse moments in time, allowing a meticulous examination of temperature trends and seasonal nuances across winter, spring, summer, and fall.
+
+This analytical journey synthesizes various data sources, numerical and categorical variables, and considers climate science complexities. The research's significance lies in unraveling past climatic behavior to inform as to how the temperature has been affected as time goes on.
+
+Here is a snapshot of 5 randomly chosen rows of the data set we'll use:
+
+```{r}
+climate_change |>
+  sample_n(5)
+```
+
+
+
+***
+
+
+
+# 2. Exploratory data analysis
+
+We have an original sample size of 308 (Table 1) temperature recordings.
+
+The earliest recording in this data set was on May 1983 and the oldest was on December 2008. Due to the data starting on May and not on January, we are missing three months for winter and one month for spring. This may cause some inaccuracies so it needs to be taken into account.
+
+Because of the the nature of the variable, there is no need to report the Mean and Standard Deviation.
+
+```{r include = F}
+climate_change %>% 
+  summarize(min = min(year), 
+            max = max(year), 
+            mean = mean(year), 
+            sd = sd(year))
+```
+
+
+
+***
+
+Table 1. Summary statistics of `temp` grouped by `season`s from 1983 to 2008.
+
+```{r}
+climate_change %>% 
+  group_by(season) %>% 
+  summarize(n = n(), 
+            mean = mean(temp, na.rm = T), 
+            median = median(temp, na.rm = T), 
+            sd = sd(temp, na.rm = T), 
+            min = min(temp, na.rm = T), 
+            max = max(temp, na.rm = T))
+```
+
+***
+
+From the distribution of `temp` in Figure 1, it is fairly symmetric so there were no transformations needed. 
+
+```{r, fig.cap = "Figure 1. Distribution of temp in Climate Change from 1983 to 2008", fig.align = "center"}
+ggplot(climate_change, aes(x = temp)) +
+  geom_histogram(binwidth = .05, color = "white", fill = "steelblue") +
+  labs(x = "Temperature", y = "Frequency") 
+```
+
+In Figure 2, we generated a scatter plot to see the overall relationship between our numerical outcome `temp` and our numerical explanatory variable `year`. As the `year`s increased, there was an observed increase in the numerical outcome `temp`. This relationship is made clearer with the positive correlation coefficient of 0.76.
+
+```{r include = F}
+climate_change %>%  
+  summarize(cor(temp, year))
+```
+
+```{r, fig.cap = "Figure 2. Scatterplot of relationship between temp and year in Climate Change from 1983 to 2008.", fig.align = "center"}
+ggplot(climate_change, aes(x = year, y = temp))+
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE ) +
+  labs(y = "Temperature", x = "Years")
+```
+
+In Figure 3, we see the relationship between the numerical outcome variable `temp` and categorical explanatory variable `season`s. `Temp` looks to be the highest at winter while lowest at fall. The differences do not appear to be that too extreme. There appears to be no outliers. Both `winter` and `fall` appear to have a high variation which might be due to how winter and fall works differently around the globe but it's hard to determine why.
+
+
+```{r, fig.cap = "Figure 3. Boxplot of relationship between temp and season in Climate Change from 1983 to 2008.", fig.align = "center"}
+ggplot(climate_change, aes(x = season, y = temp, fill = season)) +
+  geom_boxplot() +
+  labs(y = "Temperature", x = "Season")
+```
+Lastly, we generated a colored scatter plot displaying the relationship between all three variables at once in Figure 4.  Although the plot creates a model that allows for a regression line for each season, all four slopes appear to about the same so they can be considered parallel. 
+
+```{r, fig.cap = "Figure 4. Colored scatterplot of relationship between Temperature and both season and year in Climate Change from 1983 to 2008.", fig.align = "center"}
+ggplot(climate_change, aes(x = year, y = temp, color = season))+
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE ) +
+  labs(y = "Temperature", x = "Year")
+```
+
+
+
+***
+
+
+
+# 3. Multiple linear regression
+
+## 3.1 Methods
+
+The components of our multiple linear regression model are the following:
+
+* Outcome variable $y$ = Temperature
+* Numerical explanatory variable $x_1$ = Year
+* Categorical explanatory variable $x_2$ = Season
+
+where the unit of analysis is Climate Change, given that each row in our dataset corresponds to a unique temperature. As discussed earlier, we did not include an interaction effect because the slopes appear to be reasonably parallel. 
+
+
+## 3.2 Model Results
+
+***
+
+Table 2. Regression table of parallel slopes model of temperature as a function of season and year.
+ 
+```{r}
+climate_change_model <- lm(temp ~ season + year, data = climate_change)
+summary(climate_change_model)
+```
+
+***
+
+## 3.3 Interpreting the regression table
+
+The regression equation for Temperature is the following:
+
+$$
+\begin{aligned}\widehat {temperature} =& b_{0} + b_{year} \cdot year + b_{summer} \cdot 1_{is\ summer}(x_2) + b_{fall} \cdot 1_{is\ fall}(x_2) + b_{spring} \cdot 1_{is\ spring}(x_2)\\
+ =& -36.03 +0.01819 \cdot year - 0.01148 \cdot 1_{is\ summer}(x_2) - 0.04400 \cdot 1_{is\ fall}(x_2) - 0.01980 \cdot 1_{is\ spring}(x_2)
+\end{aligned} 
+$$
+
+* The intercept ($b_0$ = -36.03) represents the expected average difference in degrees Celsius between the global `temp`erature of that period and a reference value(this value is not known to us) when the `season` is `winter` and the `year` is said to be zero (Table 2).
+* The estimate for the slope for year ($b_{year}$ = 0.01819) is the associated change in Temperature depending on the year. Based on this estimate, for every for every year, there was an associated increase in the average difference of `temp`erature of on average of 0.01819 degrees Celsius.
+* The estimate for summer season ($b_{summer}$ = -0.01148) and fall season ($b_{fall}$ = -0.04400) and spring ($b_{spring}$ = -0.01980) are the offsets in intercept relative to the baseline group's, winter, intercept (Table 2). In other words on average ,when all the other seasons are zero, summer season is 0.01148 degrees Celsius lower than winter season while fall season is on average 0.04400 degrees Celsius lower and spring season is on average 0.01980 degrees Celsius lower.
+
+Thus the four regression lines have equations:
+
+$$
+\begin{aligned}
+\text{winter (in orange)}: \widehat {score} =& -36.03 + 0.01819 \cdot year\\
+\text{spring (in green)}: \widehat {score} =& -36.0498 + 0.01819 \cdot year\\
+\text{summer (in blue)}: \widehat {score} =& -36.04148 + 0.01819 \cdot year\\
+\text{fall (in purple)}: \widehat {score} =& -36.074 + 0.01819 \cdot year\\
+\end{aligned} 
+$$
+
+## 3.4 Inference for multiple regression
+
+From the regression table, we will be making use of two null hypotheses. We will also be using a significance level of 5% (0.05) to interpret the p-value. The first null hypothesis is that both `temp` and `year do not have any relationship.
+
+$$
+\begin{aligned} 
+\text{ }{H}_{0}: β_{year}= 0\\
+\text{vs }{H}_{A}: β_{year}≠ 0
+\end{aligned} 
+$$
+```{r include = F}
+-36.03 + 1.96 * .0008993
+-36.03 - 1.96 * .0008993
+```
+
+The point estimate for `year` is 0.01819. It is somewhat close to 0 but it is not 0. The 95% confidence interval is (-36.03176, -36.02824) which tells us that the relationship is far from 0. We are 95% sure that the population slope when compared to year is around that interval.
+
+```{r include =FALSE}
+climate_change_model_resid <- resid(climate_change_model)
+```
+
+The second null hypothesis is that both `temp` and `season` do not have any relationship.
+$$
+\begin{aligned} 
+\text{ }{H}_{0}: β_{seasonspring}= 0\\
+\text{vs }{H}_{A}: β_{seasonspring}≠ 0
+\end{aligned} 
+$$
+and
+$$
+\begin{aligned} 
+\text{ }{H}_{0}: β_{seasonsummer}= 0\\
+\text{vs }{H}_{A}: β_{seasonsummer}≠ 0
+\end{aligned} 
+$$
+and
+$$
+\begin{aligned} 
+\text{ }{H}_{0}: β_{seasonfall}= 0\\
+\text{vs }{H}_{A}: β_{seasonfall}≠ 0
+\end{aligned} 
+$$
+From Table 2
+* `spring` has a standard error of 0.01897, p-value of 0.2974, and a Confidence Interval of (-0.0569812, 0.0173812)
+* `summer` has a standard error of 0.01891, p-value of 0.5444, and a Confidence Interval of (-0.0485436, 0.0255836)
+* `fall` has a standard error of 0.01891, p-value of 0.0207, and a Confidence Interval of (-0.0810636, -0.0069364)
+
+Both `spring` and `summer` have a huge p-value so we fail to reject the null hypothesis in that they have no relation to the average `temp`erature difference. `Fall` has a p-value low enough that we would reject the null hypothesis on a 5% significance level so this indicates that it does have a relation to the average `temp`erature difference. Only `fall` has a confidence interval that does not contain zero, specifically values less than zero.
+
+## 3.5 Residual Analysis
+
+Histogram of residuals 
+```{r, fig.cap= "Figure 5. Histogram of residuals for statistical model", fig.align='center'}
+
+residuals <- resid(climate_change_model)
+climate_change <- cbind(climate_change,residuals)
+ggplot(climate_change, aes(x = residuals)) +
+  geom_histogram(bins = 20, fill = 'steelblue', color = 'white') + labs(x="Residual")
+
+```
+```{r, fig.cap= "Figure 6. Scatterplots of residuals against the fitted values", fig.align='center'}
+climate_change_model <- lm(temp ~ season + year, data = climate_change)
+fitted_value = fitted(climate_change_model)
+res <- resid(climate_change_model)
+
+ggplot(climate_change, aes(x = fitted_value, y = res ))+
+  geom_jitter() +
+  geom_smooth(method = "lm", se = FALSE ) +
+  labs(y = "Residuals ", x = "Fitted Values")
+
+```
+```{r, fig.cap= "Figure 7. Scatterplots of residuals against the `year`", fig.align='center'}
+ggplot(climate_change, aes(x=year, y=residuals)) +
+  geom_jitter()  +
+  geom_smooth(method = "lm", se = FALSE ) + 
+  labs(x="Year", y="Residual")
+
+```
+
+```{r,fig.cap= "Figure 8. Boxplots of residuals for each `season`", fig.align='center'}
+climate_change_model <- lm(temp~year+season, climate_change)
+
+ggplot(climate_change, aes(x = season, y = climate_change_model$residuals, fill = season)) +
+  geom_boxplot() +
+  labs(y = "residuals", x = "Seasons") + 
+  geom_hline(yintercept = 0, color = "blue")
+  
+
+```
+
+The model residuals appear to be fairly distributed save for one outlier to the left in Figure 5. Figure 6 seems to contain outliers particularly at the bottom right and middle top and it also appears to have a pattern of going up and down. Figure 7 is roughly the same as Figure 6 having outliers at the same place and the same pattern of going up and down. This may be a violation of the independence assumption due to the cyclical nature of the variables due to `season`s. Due to the said cyclical nature, it cannot be used to assume the global temperature differences all year round and may only be plausible to their own distinct seasons. The box plots in Figure 8 show similar or the same spread for each `season`s and their values are roughly the same as well. However, `winter` has 2 extreme outliers. We conclude that not all assumptions for multiple linear regression are well met, particularly the independence assumption due to there being a pattern. It might be worth the effort to see if the two outliers in winter heavily affect anything.
+***
+
+
+
+# 4. Discussion 
+
+## 4.1 Conclusions
+
+We observed that there is a relation with the global `temp`erature difference based on the `year`. `Spring` and `summer` have no relation to the `temp`erature but `fall` may have some relations. On average, global `temp`erature difference increases by 0.01819 degrees Celsius as `year` increases by 1 when the season is `winter`.
+
+Our analysis suggests that `year` may have a greater impact on the global `temp`erature as compared to the `season`s due to the exceedingly low probability. Though these findings can only be generalized to the `year`s 1983 to 2008.
+
+
+## 4.2 Limitations
+
+
+Our analysis has some constraints to consider:
+
+- Independence Assumption Violation: Due to the cyclical nature of the data it's hard to say the observations are truly independent from one another which does make the use of the linear regression less valid.
+
+- Linear Model: Our model assumes a straight-line relationship, potentially overlooking more complex patterns or interactions.
+
+- Seasonal Patterns: Outliers suggest a challenge in predicting temperature year-round due to distinct seasonal patterns.
+
+- Limited Variables: We focused on specific factors; there could be other influences on global temperature not considered.
+
+- Outliers' Impact: Outliers, especially in winter, may impact our model's predictions, warranting further investigation. Due to that our analysis may not be completely representative of what we have gathered.
+
+## 4.3 Further questions
+
+
+Our analysis raises additional questions for future exploration:
+
+Non-linear Patterns: Given the limitations of assuming a linear relationship, investigating potential non-linear patterns in temperature trends could enhance our understanding.
+
+Seasonal Variability: Delving deeper into the specific factors contributing to seasonal variations, especially in fall, could provide more nuanced insights into global temperature dynamics.
+
+Additional Variables: Exploring the impact of other variables beyond those considered in our model could uncover hidden influences on temperature changes.
+
+Outlier Investigation: A more detailed examination of outliers, particularly in winter, would help understand their origins and assess their impact on our model.
+
+Longer-Term Trends: Extending the analysis beyond 2008 could reveal more prolonged trends and patterns in global temperature, offering a more comprehensive view of climate behavior.
+
+Refined Model: Developing more sophisticated models that account for the cyclic nature of seasons and potential interactions between variables could improve the accuracy of temperature predictions.
+
+Addressing these questions in future research could contribute to a more thorough understanding of climate dynamics and enhance the reliability of predictive models.
+
+
+
+*** 
+
+
+
+# 5. Author Statement
+
+## Individual Roles
+
+_Describe the role (Facilitator, Recorder, Reporter, Time Keeper, Checker) and level of contribution of each group member during this project phase_ 
+
+All group members were able to properly contribute and did their part. 
+
+* Ainrhon Uy acted as the Facilitator
+* Sajid Oyon acted as the Time Keeper
+* Emmanuel Lagudah  as the Recorder
+* Dushyan Rai Mungur as the Reporter
+* Divyesh Jadheea as the Checker
+
+## Individual Contribution
+
+_If your group were to earn 5 points on this submission, how should those points be shared across your group members?_
+
+* Ainrhon Uy: 1/5 points
+* Sajid Oyon: 1/5 points
+* Emmanuel Lagudah: 1/5 points
+* Dushyant Rai Mungur: 1/5 points
+* Divyesh Jadheea: 1/5 points
+
