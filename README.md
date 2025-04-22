@@ -1,5 +1,3 @@
-﻿# Exploratory-Data-Analysis-and-Predictive-Modeling
-
 # Data Visualization and Regression Analysis
 
 The project was created for the **STAT 1910** course and utilizes datasets from [OpenIntro](https://www.openintro.org/data/).
